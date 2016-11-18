@@ -1,15 +1,14 @@
 module Main exposing (..)
 
 import Html exposing (..)
-import Html.App as Html
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as Json exposing (string)
 import Json.Decode.Pipeline as JsonPipeline exposing (decode, required)
-import Task
 
 
+main : Program Never Model Msg
 main =
     Html.program
         { init = init
@@ -43,8 +42,7 @@ init =
 
 type Msg
     = GetPoster
-    | FetchSucceed Movie
-    | FetchFail Http.Error
+    | NewImg (Result Http.Error Movie)
     | UpdateSearchString String
 
 
@@ -58,10 +56,10 @@ update msg model =
             }
                 ! [ getMoviePoster model.searchString ]
 
-        FetchSucceed movie ->
+        NewImg (Ok movie) ->
             ( Model model.searchString movie.title movie.posterUrl, Cmd.none )
 
-        FetchFail error ->
+        NewImg (Err _) ->
             let
                 errorMessage =
                     "We couldn’t find that movie 😯"
@@ -115,7 +113,7 @@ getMoviePoster searchString =
         url =
             "//www.omdbapi.com/?t=" ++ searchString
     in
-        Task.perform FetchFail FetchSucceed (Http.get decodeMovieUrl url)
+        Http.send NewImg (Http.get url decodeMovieUrl)
 
 
 type alias Movie =
